@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>One Tiny Question 💘</title>
+
+  <style>
+    :root{
+      --bg1:#ffe6f1;
+      --bg2:#fff5d6;
+      --card:#ffffffd9;
+      --text:#1f1f1f;
+      --muted:#6b6b6b;
+      --yes:#ff4d88;
+      --yes2:#ff2f76;
+      --shadow:0 18px 60px rgba(0,0,0,.10);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:radial-gradient(circle at 20% 10%, var(--bg2), var(--bg1));
+      overflow:hidden;
+    }
+
+    .card{
+      width:min(680px,92vw);
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:28px;
+      backdrop-filter:blur(10px);
+      position:relative;
+    }
+
+    h1{
+      margin:0 0 10px;
+      font-size:clamp(28px,3.4vw,40px);
+      letter-spacing:-.02em;
+    }
+
+    .badge{
+      display:inline-block;
+      margin-left:10px;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      color:#a01245;
+      background:rgba(255,77,136,.14);
+      vertical-align:middle;
+    }
+
+    p{
+      margin:10px 0;
+      font-size:clamp(16px,2.1vw,18px);
+      line-height:1.5;
+    }
+
+    .muted{color:var(--muted)}
+
+    .buttons{
+      margin-top:18px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    button{
+      border:0;
+      padding:13px 18px;
+      border-radius:999px;
+      font-weight:800;
+      cursor:pointer;
+      font-size:16px;
+      user-select:none;
+      -webkit-tap-highlight-color:transparent;
+      transition:transform .12s ease, filter .12s ease;
+    }
+
+    button:active{transform:scale(.98)}
+
+    #yesBtn{
+      color:#fff;
+      background:linear-gradient(135deg,var(--yes),var(--yes2));
+      box-shadow:0 10px 25px rgba(255,77,136,.28);
+    }
+
+    #yesBtn:hover{filter:brightness(1.04)}
+
+    #noBtn{
+      position:fixed;
+      background:#f2f2f2;
+      color:#444;
+      left:12px;
+      top:calc(100vh - 80px);
+    }
+
+    /* hearts */
+    .heart{
+      position:absolute;
+      font-size:18px;
+      opacity:.85;
+      animation:floatUp 3.2s ease-in forwards;
+      pointer-events:none;
+    }
+
+    @keyframes floatUp{
+      from{transform:translateY(0) scale(1); opacity:.9}
+      to{transform:translateY(-120px) scale(1.35); opacity:0}
+    }
+
+    /* confetti */
+    .pop{
+      position:absolute;
+      width:9px;
+      height:9px;
+      border-radius:2px;
+      opacity:.9;
+      animation:pop 850ms ease-out forwards;
+      pointer-events:none;
+    }
+
+    @keyframes pop{
+      from{transform:translate(0,0) rotate(0deg); opacity:1}
+      to{transform:translate(var(--dx), var(--dy)) rotate(240deg); opacity:0}
+    }
+
+    /* Are you sure overlay */
+    .overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      background:rgba(15,10,15,.5);
+      backdrop-filter:blur(10px);
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9999;
+    }
+
+    .overlay.show{display:flex}
+
+    .modal{
+      width:min(520px,92vw);
+      background:rgba(255,255,255,.92);
+      border-radius:var(--radius);
+      box-shadow:0 28px 90px rgba(0,0,0,.22);
+      padding:22px;
+    }
+
+    .modal h2{
+      margin:0 0 6px;
+      font-size:clamp(22px,3vw,28px);
+      letter-spacing:-.02em;
+    }
+
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .secondary{
+      background:#f2f2f2;
+      color:#444;
+      font-weight:800;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card" id="card">
+    <h1>
+      Hey handsome. 💘
+      <span class="badge" id="statusBadge">serious</span>
+    </h1>
+
+    <p>Will you be my Valentine?</p>
+    <p class="muted" id="subtext">Choose wisely. I’m watching. 🙂</p>
+
+    <div class="buttons">
+      <button id="yesBtn">YES 😍</button>
+      <button id="noBtn">No 🙄</button>
+    </div>
+  </main>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2>Are you sure? 😳</h2>
+      <p class="muted">This answer may cause excessive affection.</p>
+
+      <div class="row">
+        <button id="confirmYes" style="background:linear-gradient(135deg,var(--yes),var(--yes2));color:#fff;">
+          I’M SURE ✅
+        </button>
+        <button id="hesitateBtn" class="secondary">Wait… 🤔</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn  = document.getElementById('noBtn');
+    const subtext = document.getElementById('subtext');
+    const badge = document.getElementById('statusBadge');
+    const card = document.getElementById('card');
+
+    const overlay = document.getElementById('overlay');
+    const confirmYes = document.getElementById('confirmYes');
+    const hesitateBtn = document.getElementById('hesitateBtn');
+
+    let dodgeCount = 0;
+    let noUnlocked = false;
+
+    const lines = [
+      "Nope. Try again. 🙂",
+      "That option is unavailable.",
+      "Interesting choice. Still no.",
+      "Respectfully: absolutely not.",
+      "Please select YES to continue.",
+      "Okay wow. Persistent. Still no."
+    ];
+
+    function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+
+    function spawnHeart(x,y){
+      const h=document.createElement('div');
+      h.className='heart';
+      h.textContent=["💖","💘","💕","😍","😘"][rand(0,4)];
+      h.style.left=x+"px";
+      h.style.top=y+"px";
+      document.body.appendChild(h);
+      setTimeout(()=>h.remove(),3300);
+    }
+
+    function confettiBurst(x,y){
+      for(let i=0;i<18;i++){
+        const p=document.createElement('div');
+        p.className='pop';
+        p.style.left=x+"px";
+        p.style.top=y+"px";
+        p.style.background=`hsl(${rand(320,50)},90%,65%)`;
+        p.style.setProperty('--dx',rand(-140,140)+'px');
+        p.style.setProperty('--dy',rand(-160,60)+'px');
+        document.body.appendChild(p);
+        setTimeout(()=>p.remove(),900);
+      }
+    }
+
+    function placeNoButton(){
+      const pad=10;
+      const r=noBtn.getBoundingClientRect();
+      const w=window.innerWidth,h=window.innerHeight;
+      let x,y;
+      do{
+        x=rand(pad,w-r.width-pad);
+        y=rand(pad,h-r.height-pad);
+      }while(y>h/2-80&&y<h/2+220&&x>w/2-260&&x<w/2+260);
+      noBtn.style.left=x+'px';
+      noBtn.style.top=y+'px';
+    }
+
+    function dodgeNo(){
+      if(noUnlocked) return;
+      dodgeCount++;
+      badge.textContent=dodgeCount<4?'negotiating':'no detected';
+      subtext.textContent=lines[Math.min(dodgeCount-1,lines.length-1)];
+      placeNoButton();
+
+      if(dodgeCount>=4){
+        noBtn.style.pointerEvents='none';
+        setTimeout(()=>noBtn.style.pointerEvents='auto',220);
+      }
+
+      if(dodgeCount>=10){
+        noUnlocked=true;
+        noBtn.textContent='Ok fine… YES 🙃';
+        noBtn.onclick=()=>showConfirm();
+      }
+    }
+
+    function proximity(x,y){
+      if(noUnlocked) return;
+      const r=noBtn.getBoundingClientRect();
+      const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      if(Math.hypot(x-cx,y-cy)<140) dodgeNo();
+    }
+
+    document.addEventListener('mousemove',e=>proximity(e.clientX,e.clientY),{passive:true});
+    document.addEventListener('touchstart',e=>{
+      const t=e.touches[0];
+      if(t) proximity(t.clientX,t.clientY);
+    },{passive:true});
+
+    noBtn.addEventListener('mouseenter',dodgeNo);
+    noBtn.addEventListener('mousedown',e=>{e.preventDefault();dodgeNo();});
+
+    placeNoButton();
+
+    function showConfirm(){
+      overlay.classList.add('show');
+      confettiBurst(window.innerWidth/2,window.innerHeight/2-60);
+    }
+
+    function celebrate(){
+      overlay.classList.remove('show');
+      badge.textContent='YAY';
+      card.querySelector('h1').textContent='Locked in. 💞';
+      subtext.innerHTML='<strong>Correct answer.</strong><br><br>Valentine status: secured ✅';
+      yesBtn.style.display='none';
+      noBtn.style.display='none';
+
+      confettiBurst(window.innerWidth/2,window.innerHeight/2);
+      let i=0;
+      const t=setInterval(()=>{
+        spawnHeart(rand(40,window.innerWidth-40),rand(120,window.innerHeight-40));
+        if(++i>14) clearInterval(t);
+      },150);
+    }
+
+    yesBtn.addEventListener('click',showConfirm);
+    confirmYes.addEventListener('click',celebrate);
+
+    function dodgeHesitate(){
+      const r=hesitateBtn.getBoundingClientRect();
+      hesitateBtn.style.position='fixed';
+      hesitateBtn.style.left=rand(10,window.innerWidth-r.width-10)+'px';
+      hesitateBtn.style.top=rand(10,window.innerHeight-r.height-10)+'px';
+    }
+
+    hesitateBtn.addEventListener('mouseenter',dodgeHesitate);
+    hesitateBtn.addEventListener('click',e=>{e.preventDefault();dodgeHesitate();});
+
+    document.addEventListener('click',e=>{
+      if(e.target.tagName.toLowerCase()==='button') return;
+      spawnHeart(e.clientX,e.clientY);
+    });
+  </script>
+</body>
+</html>
