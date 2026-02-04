@@ -18,7 +18,7 @@
       --radius:22px;
     }
 
-    *{box-sizing:border-box}
+    *{ box-sizing:border-box; }
 
     body{
       margin:0;
@@ -38,11 +38,13 @@
       box-shadow:var(--shadow);
       padding:28px;
       backdrop-filter:blur(10px);
+      position:relative;
     }
 
     h1{
       margin:0 0 10px;
       font-size:clamp(28px,3.4vw,40px);
+      letter-spacing:-.02em;
     }
 
     .badge{
@@ -54,6 +56,7 @@
       font-weight:700;
       color:#a01245;
       background:rgba(255,77,136,.14);
+      vertical-align:middle;
     }
 
     p{
@@ -62,12 +65,13 @@
       line-height:1.5;
     }
 
-    .muted{color:var(--muted)}
+    .muted{ color:var(--muted); }
 
     .buttons{
       margin-top:18px;
       display:flex;
       gap:12px;
+      flex-wrap:wrap;
       align-items:center;
     }
 
@@ -80,7 +84,10 @@
       font-size:16px;
       user-select:none;
       -webkit-tap-highlight-color:transparent;
+      transition: transform .12s ease, filter .12s ease;
     }
+
+    button:active{ transform:scale(.98); }
 
     #yesBtn{
       color:#fff;
@@ -88,71 +95,84 @@
       box-shadow:0 10px 25px rgba(255,77,136,.28);
     }
 
-    /* MORE VISIBLE NO BUTTON */
+    #yesBtn:hover{ filter:brightness(1.04); }
+
+    /* ✅ No button STARTS inside the card, visible */
     #noBtn{
-      position:fixed;
-      background:#f7f7f7;
+      position:relative;
+      background:#f2f2f2;
       color:#333;
       border:2px solid rgba(0,0,0,.15);
       box-shadow:0 6px 16px rgba(0,0,0,.18);
-      left:50%;
-      top:65%;
-      transform:translate(-50%, -50%);
     }
 
-    /* effects */
+    /* Floating hearts */
     .heart{
       position:absolute;
       font-size:18px;
       opacity:.85;
-      animation:floatUp 3s ease-in forwards;
+      animation: floatUp 3.2s ease-in forwards;
       pointer-events:none;
     }
     @keyframes floatUp{
-      from{transform:translateY(0) scale(1);opacity:.9}
-      to{transform:translateY(-120px) scale(1.3);opacity:0}
+      from{ transform:translateY(0) scale(1); opacity:.9; }
+      to{ transform:translateY(-120px) scale(1.35); opacity:0; }
     }
 
+    /* Confetti-ish */
     .pop{
       position:absolute;
       width:9px;
       height:9px;
       border-radius:2px;
-      animation:pop .9s ease-out forwards;
+      opacity:.9;
+      animation: pop 850ms ease-out forwards;
+      pointer-events:none;
     }
     @keyframes pop{
-      to{transform:translate(var(--dx),var(--dy)) rotate(240deg);opacity:0}
+      from{ transform:translate(0,0) rotate(0deg); opacity:1; }
+      to{ transform:translate(var(--dx), var(--dy)) rotate(240deg); opacity:0; }
     }
 
+    /* Clean "Are you sure?" overlay */
     .overlay{
       position:fixed;
       inset:0;
       display:none;
-      background:rgba(0,0,0,.45);
-      backdrop-filter:blur(10px);
+      background: rgba(15, 10, 15, .50);
+      backdrop-filter: blur(10px);
       align-items:center;
       justify-content:center;
-      z-index:999;
+      padding:18px;
+      z-index:9999;
     }
-    .overlay.show{display:flex}
+    .overlay.show{ display:flex; }
 
     .modal{
-      background:#fff;
-      border-radius:22px;
+      width:min(520px, 92vw);
+      background: rgba(255,255,255,.92);
+      border-radius: var(--radius);
+      box-shadow: 0 28px 90px rgba(0,0,0,.22);
       padding:22px;
-      width:min(520px,92vw);
-      box-shadow:0 25px 80px rgba(0,0,0,.25);
+    }
+
+    .modal h2{
+      margin:0 0 6px;
+      font-size: clamp(22px, 3vw, 28px);
+      letter-spacing:-.02em;
     }
 
     .row{
       display:flex;
       gap:12px;
-      margin-top:14px;
       flex-wrap:wrap;
+      margin-top:14px;
+      align-items:center;
     }
 
     .secondary{
       background:#f2f2f2;
+      color:#444;
       font-weight:800;
     }
   </style>
@@ -161,12 +181,12 @@
 <body>
   <main class="card" id="card">
     <h1>
-      Hey handsome 💘
+      Hey handsome. 💘
       <span class="badge" id="statusBadge">serious</span>
     </h1>
 
     <p>Will you be my Valentine?</p>
-    <p class="muted" id="subtext">Take your time… but choose wisely 🙂</p>
+    <p class="muted" id="subtext">Choose wisely. I’m watching. 🙂</p>
 
     <div class="buttons">
       <button id="yesBtn">YES 😍</button>
@@ -179,7 +199,7 @@
       <h2>Are you sure? 😳</h2>
       <p class="muted">This answer may cause excessive affection.</p>
       <div class="row">
-        <button id="confirmYes" style="background:linear-gradient(135deg,var(--yes),var(--yes2));color:#fff">
+        <button id="confirmYes" style="background:linear-gradient(135deg,var(--yes),var(--yes2)); color:#fff;">
           I’M SURE ✅
         </button>
         <button id="hesitateBtn" class="secondary">Wait… 🤔</button>
@@ -188,75 +208,129 @@
   </div>
 
   <script>
-    const noBtn = document.getElementById('noBtn');
     const yesBtn = document.getElementById('yesBtn');
-    const badge = document.getElementById('statusBadge');
+    const noBtn  = document.getElementById('noBtn');
     const subtext = document.getElementById('subtext');
+    const badge = document.getElementById('statusBadge');
+    const card = document.getElementById('card');
+
     const overlay = document.getElementById('overlay');
     const confirmYes = document.getElementById('confirmYes');
     const hesitateBtn = document.getElementById('hesitateBtn');
 
     let dodges = 0;
+    let noUnlocked = false;
     let lastMove = 0;
 
-    function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+    const lines = [
+      "Nope. Try again. 🙂",
+      "That option is unavailable.",
+      "Interesting choice. Still no.",
+      "Respectfully: absolutely not.",
+      "Please select YES to continue.",
+      "Okay wow. Persistent. Still no."
+    ];
 
-    function moveNo(){
-      const now = Date.now();
-      if(now - lastMove < 700) return; // STAYS LONGER
-      lastMove = now;
+    function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
-      dodges++;
-      badge.textContent = dodges < 4 ? "thinking…" : "still no";
-      subtext.textContent = [
-        "Hmm… interesting choice.",
-        "That’s not it 🙂",
-        "You’re very determined.",
-        "Still married though.",
-        "Okay wow. Impressive."
-      ][Math.min(dodges-1,4)];
+    function spawnHeart(x,y){
+      const h = document.createElement('div');
+      h.className = 'heart';
+      h.textContent = ["💖","💘","💕","😍","😘"][rand(0,4)];
+      h.style.left = x + "px";
+      h.style.top  = y + "px";
+      document.body.appendChild(h);
+      setTimeout(()=>h.remove(), 3300);
+    }
 
-      const r = noBtn.getBoundingClientRect();
-      noBtn.style.left = rand(40, window.innerWidth - r.width - 40) + "px";
-      noBtn.style.top  = rand(120, window.innerHeight - r.height - 40) + "px";
-
-      if(dodges >= 8){
-        noBtn.textContent = "Fine… YES 🙃";
-        noBtn.onclick = showConfirm;
+    function confettiBurst(x,y){
+      for(let i=0;i<18;i++){
+        const p = document.createElement('div');
+        p.className = 'pop';
+        p.style.left = x + "px";
+        p.style.top  = y + "px";
+        p.style.background = `hsl(${rand(320,50)}, 90%, 65%)`;
+        p.style.setProperty('--dx', rand(-140,140) + 'px');
+        p.style.setProperty('--dy', rand(-160,60) + 'px');
+        document.body.appendChild(p);
+        setTimeout(()=>p.remove(), 900);
       }
     }
 
-    document.addEventListener('mousemove', e=>{
-      const r = noBtn.getBoundingClientRect();
-      const cx = r.left + r.width/2;
-      const cy = r.top + r.height/2;
-      if(Math.hypot(e.clientX-cx, e.clientY-cy) < 90) moveNo();
-    }, {passive:true});
-
-    noBtn.addEventListener('click', e=>{
-      e.preventDefault();
-      moveNo();
-    });
-
     function showConfirm(){
       overlay.classList.add('show');
+      confettiBurst(window.innerWidth/2, window.innerHeight/2 - 60);
     }
 
     function celebrate(){
       overlay.classList.remove('show');
       badge.textContent = "YAY";
-      subtext.innerHTML = "<strong>Correct answer.</strong> 💞";
-      noBtn.style.display = "none";
-      yesBtn.style.display = "none";
+      card.querySelector('h1').textContent = "Locked in. 💞";
+      subtext.innerHTML = "<strong>Correct answer.</strong><br><br>Valentine status: secured ✅";
+      yesBtn.style.display = 'none';
+      noBtn.style.display = 'none';
+
+      confettiBurst(window.innerWidth/2, window.innerHeight/2);
+
+      let i = 0;
+      const t = setInterval(()=>{
+        spawnHeart(rand(40, window.innerWidth - 40), rand(120, window.innerHeight - 40));
+        if(++i > 14) clearInterval(t);
+      }, 150);
     }
 
+    /* ✅ No stays visible until he tries to interact, then it escapes */
+    function moveNo(){
+      if (noUnlocked) return;
+
+      const now = Date.now();
+      if (now - lastMove < 600) return; // makes it stay longer / less frantic
+      lastMove = now;
+
+      dodges++;
+      badge.textContent = dodges < 4 ? "negotiating" : "no detected";
+      subtext.textContent = lines[Math.min(dodges - 1, lines.length - 1)];
+
+      // Switch to free-floating mode ONLY after first attempt
+      noBtn.style.position = "fixed";
+
+      const r = noBtn.getBoundingClientRect();
+      noBtn.style.left = rand(30, window.innerWidth - r.width - 30) + "px";
+      noBtn.style.top  = rand(90, window.innerHeight - r.height - 30) + "px";
+
+      // After enough attempts, it gives up and becomes YES
+      if (dodges >= 8){
+        noUnlocked = true;
+        noBtn.textContent = "Fine… YES 🙃";
+        noBtn.style.background = "#ffe3ef";
+        noBtn.style.color = "#b01245";
+        noBtn.style.borderColor = "rgba(176, 18, 69, .25)";
+        noBtn.onclick = showConfirm;
+      }
+    }
+
+    // YES opens the fake confirmation
     yesBtn.addEventListener('click', showConfirm);
     confirmYes.addEventListener('click', celebrate);
 
-    hesitateBtn.addEventListener('mouseenter', ()=>{
-      hesitateBtn.style.position='fixed';
-      hesitateBtn.style.left=rand(40,window.innerWidth-140)+'px';
-      hesitateBtn.style.top=rand(40,window.innerHeight-80)+'px';
+    // NO dodges on hover or click
+    noBtn.addEventListener('mouseenter', moveNo);
+    noBtn.addEventListener('click', (e)=>{ e.preventDefault(); moveNo(); });
+
+    // Make the "Wait..." button also dodge a bit (funny, but not too chaotic)
+    function dodgeHesitate(){
+      const r = hesitateBtn.getBoundingClientRect();
+      hesitateBtn.style.position = 'fixed';
+      hesitateBtn.style.left = rand(20, window.innerWidth - r.width - 20) + "px";
+      hesitateBtn.style.top  = rand(20, window.innerHeight - r.height - 20) + "px";
+    }
+    hesitateBtn.addEventListener('mouseenter', dodgeHesitate);
+    hesitateBtn.addEventListener('click', (e)=>{ e.preventDefault(); dodgeHesitate(); });
+
+    // Hearts on background clicks
+    document.addEventListener('click', (e)=>{
+      if (e.target.tagName.toLowerCase() === 'button') return;
+      spawnHeart(e.clientX, e.clientY);
     });
   </script>
 </body>
