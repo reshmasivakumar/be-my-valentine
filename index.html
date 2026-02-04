@@ -97,16 +97,16 @@
 
     #yesBtn:hover{ filter:brightness(1.04); }
 
-    /* ✅ No button STARTS inside the card, visible */
+    /* No starts visible next to YES (inside card layout) */
     #noBtn{
       position:relative;
       background:#f2f2f2;
       color:#333;
       border:2px solid rgba(0,0,0,.15);
-      box-shadow:0 6px 16px rgba(0,0,0,.18);
+      box-shadow:0 6px 16px rgba(0,0,0,.12);
     }
 
-    /* Floating hearts */
+    /* Hearts + confetti */
     .heart{
       position:absolute;
       font-size:18px;
@@ -118,8 +118,6 @@
       from{ transform:translateY(0) scale(1); opacity:.9; }
       to{ transform:translateY(-120px) scale(1.35); opacity:0; }
     }
-
-    /* Confetti-ish */
     .pop{
       position:absolute;
       width:9px;
@@ -134,7 +132,7 @@
       to{ transform:translate(var(--dx), var(--dy)) rotate(240deg); opacity:0; }
     }
 
-    /* Clean "Are you sure?" overlay */
+    /* "Are you sure?" overlay */
     .overlay{
       position:fixed;
       inset:0;
@@ -185,7 +183,7 @@
       <span class="badge" id="statusBadge">serious</span>
     </h1>
 
-    <p>Will you be my Valentine?</p>
+    <p id="questionLine">Will you be my Valentine?</p>
     <p class="muted" id="subtext">Choose wisely. I’m watching. 🙂</p>
 
     <div class="buttons">
@@ -218,17 +216,15 @@
     const confirmYes = document.getElementById('confirmYes');
     const hesitateBtn = document.getElementById('hesitateBtn');
 
-    let dodges = 0;
-    let noUnlocked = false;
-    let lastMove = 0;
+    let noMoves = 0;
+    let lastNoTeleport = 0;
 
-    const lines = [
-      "Nope. Try again. 🙂",
-      "That option is unavailable.",
-      "Interesting choice. Still no.",
-      "Respectfully: absolutely not.",
-      "Please select YES to continue.",
-      "Okay wow. Persistent. Still no."
+    const noLines = [
+      "Nice try 🙂",
+      "Not an option today.",
+      "You’re adorable. Still no.",
+      "That button is decorative.",
+      "Please proceed to YES."
     ];
 
     function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
@@ -265,13 +261,14 @@
     function celebrate(){
       overlay.classList.remove('show');
       badge.textContent = "YAY";
-      card.querySelector('p').textContent = "You’re officially my Valentine.";
+      card.querySelector('h1').textContent = "Locked in. 💞";
+      // Hide the question for cleaner end screen
+      document.getElementById('questionLine').style.display = "none";
       subtext.innerHTML = "<strong>Correct answer.</strong><br><br>Valentine status: secured ✅";
       yesBtn.style.display = 'none';
       noBtn.style.display = 'none';
 
       confettiBurst(window.innerWidth/2, window.innerHeight/2);
-
       let i = 0;
       const t = setInterval(()=>{
         spawnHeart(rand(40, window.innerWidth - 40), rand(120, window.innerHeight - 40));
@@ -279,52 +276,52 @@
       }, 150);
     }
 
-    /* ✅ No stays visible until he tries to interact, then it escapes */
-    function moveNo(){
-      if (noUnlocked) return;
-
+    // ✅ TELEPORT NO EXACTLY LIKE "WAIT…"
+    function teleportNo(){
       const now = Date.now();
-      if (now - lastMove < 600) return; // makes it stay longer / less frantic
-      lastMove = now;
+      if (now - lastNoTeleport < 260) return; // prevents rapid flicker
+      lastNoTeleport = now;
 
-      dodges++;
-      badge.textContent = dodges < 4 ? "negotiating" : "no detected";
-      subtext.textContent = lines[Math.min(dodges - 1, lines.length - 1)];
+      noMoves++;
+      badge.textContent = noMoves < 4 ? "negotiating" : "no detected";
+      subtext.textContent = noLines[Math.min(noMoves - 1, noLines.length - 1)];
 
-      // Switch to free-floating mode ONLY after first attempt
-      noBtn.style.position = "fixed";
+      // Make it free-floating after the first escape
+      noBtn.style.position = 'fixed';
 
       const r = noBtn.getBoundingClientRect();
-      noBtn.style.left = rand(30, window.innerWidth - r.width - 30) + "px";
-      noBtn.style.top  = rand(90, window.innerHeight - r.height - 30) + "px";
+      const pad = 18;
 
-      // After enough attempts, it gives up and becomes YES
-      if (dodges >= 8){
-        noUnlocked = true;
-        noBtn.textContent = "Fine… YES 🙃";
-        noBtn.style.background = "#ffe3ef";
-        noBtn.style.color = "#b01245";
-        noBtn.style.borderColor = "rgba(176, 18, 69, .25)";
-        noBtn.onclick = showConfirm;
-      }
+      // Keep it within screen bounds, and avoid hiding under the top-left corners
+      noBtn.style.left = rand(pad, Math.max(pad, window.innerWidth  - r.width  - pad)) + "px";
+      noBtn.style.top  = rand(80,  Math.max(80,  window.innerHeight - r.height - pad)) + "px";
+
+      // Tiny flourish
+      spawnHeart(
+        parseFloat(noBtn.style.left) + r.width/2,
+        parseFloat(noBtn.style.top) + r.height/2
+      );
     }
 
-    // YES opens the fake confirmation
+    // Triggers: hover + click + touch (mobile)
+    noBtn.addEventListener('mouseenter', teleportNo);
+    noBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); teleportNo(); });
+    noBtn.addEventListener('click', (e)=>{ e.preventDefault(); teleportNo(); });
+    noBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); teleportNo(); }, {passive:false});
+
+    // YES triggers fake confirmation
     yesBtn.addEventListener('click', showConfirm);
     confirmYes.addEventListener('click', celebrate);
 
-    // NO dodges on hover or click
-    noBtn.addEventListener('mouseenter', moveNo);
-    noBtn.addEventListener('click', (e)=>{ e.preventDefault(); moveNo(); });
-
-    // Make the "Wait..." button also dodge a bit (funny, but not too chaotic)
+    // Make "Wait…" bounce too (same style)
     function dodgeHesitate(){
       const r = hesitateBtn.getBoundingClientRect();
       hesitateBtn.style.position = 'fixed';
-      hesitateBtn.style.left = rand(20, window.innerWidth - r.width - 20) + "px";
-      hesitateBtn.style.top  = rand(20, window.innerHeight - r.height - 20) + "px";
+      hesitateBtn.style.left = rand(18, window.innerWidth  - r.width  - 18) + "px";
+      hesitateBtn.style.top  = rand(18, window.innerHeight - r.height - 18) + "px";
     }
     hesitateBtn.addEventListener('mouseenter', dodgeHesitate);
+    hesitateBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); dodgeHesitate(); });
     hesitateBtn.addEventListener('click', (e)=>{ e.preventDefault(); dodgeHesitate(); });
 
     // Hearts on background clicks
